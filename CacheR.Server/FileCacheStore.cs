@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -8,13 +9,11 @@ using Newtonsoft.Json;
 
 namespace CacheR.Server
 {
-    public class FileStore : ICacheStore
+    public class FileCacheStore : ICacheStore
     {
-        private static IQueryable<CacheEntry> _empty = Enumerable.Empty<CacheEntry>().AsQueryable();
-
         private readonly string _path;
 
-        public FileStore(string path)
+        public FileCacheStore(string path)
         {
             _path = path;
         }
@@ -25,13 +24,13 @@ namespace CacheR.Server
             return Task.Factory.StartNew(() => File.AppendAllText(_path, rawEntry + Environment.NewLine));
         }
 
-        public IQueryable<CacheEntry> GetAll()
+        public IEnumerable<CacheEntry> GetAll()
         {
             try
             {
                 if (!File.Exists(_path))
                 {
-                    return _empty;
+                    return Enumerable.Empty<CacheEntry>();
                 }
 
                 // This is inefficient but meh :)
@@ -39,13 +38,12 @@ namespace CacheR.Server
                         select line.Trim() into entry
                         select JsonConvert.DeserializeObject<CacheEntry>(entry))
                         .Reverse()
-                        .Distinct(CacheEntryKeyComparer.Instance)
-                        .AsQueryable();
+                        .Distinct(CacheEntryKeyComparer.Instance);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Failed to retrive cached entries: " + ex);
-                return _empty;
+                return Enumerable.Empty<CacheEntry>();
             }
         }
     }

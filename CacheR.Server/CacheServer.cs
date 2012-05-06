@@ -13,7 +13,7 @@ namespace CacheR.Server
         private readonly SelfHostServer _server;
 
         public CacheServer(string url)
-            : this(new FileStore("cache.txt"), url)
+            : this(new MemoryCacheStore(), url)
         {
         }
 
