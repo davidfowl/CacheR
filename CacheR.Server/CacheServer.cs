@@ -5,6 +5,7 @@ using CacheR.Model;
 using Newtonsoft.Json;
 using SignalR;
 using SignalR.Hosting;
+
 using SelfHostServer = SignalR.Hosting.Self.Server;
 
 namespace CacheR.Server
@@ -24,6 +25,8 @@ namespace CacheR.Server
             _server = new SelfHostServer(url);
             _server.DependencyResolver.Register(typeof(CacheConnection), () => new CacheConnection(this));
             _server.MapConnection<CacheConnection>("/cache");
+
+            Store.OnEntryRemoved = OnEntryRemoved;
         }
 
         public ICacheStore Store
@@ -58,6 +61,23 @@ namespace CacheR.Server
                 default:
                     throw new NotSupportedException();
             }
+        }
+
+        public void OnEntryRemoved(string key)
+        {
+            var command = new CacheCommand
+            {
+                Type = CacheCommandType.Remove,
+                Entries = new[] {
+                    new CacheEntry{
+                        Key = key
+                    }
+                }
+            };
+
+            // When an entry is removed let all subscribers know
+            var context = _server.ConnectionManager.GetConnectionContext<CacheConnection>();
+            context.Connection.Broadcast(command);
         }
 
         private class CacheConnection : PersistentConnection
