@@ -11,8 +11,8 @@ namespace CacheR
             cache.Connect();
 
             Console.WriteLine("Enter 'key=value' to add a value to the cache.");
-            Console.WriteLine("Enter 'key' to retrieve a value from the cache.");
-            Console.WriteLine("Enter '-key' to retrieve a value from the cache.");
+            Console.WriteLine("Enter 'key' to get a value from the cache.");
+            Console.WriteLine("Enter '-key' to delete a value from the cache.");
 
             string line = null;
             while ((line = Console.ReadLine()) != null)
