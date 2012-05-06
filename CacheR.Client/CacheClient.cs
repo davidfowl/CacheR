@@ -25,12 +25,28 @@ namespace CacheR.Client
 
         private void OnCacheEntryReceived(string data)
         {
-            var entries = JsonConvert.DeserializeObject<CacheEntry[]>(data);
-            foreach (var entry in entries)
+            var command = JsonConvert.DeserializeObject<CacheCommand>(data);
+
+            switch (command.Type)
             {
-                // You can't trick me C#...
-                object value = entry.Value;
-                _cache.AddOrUpdate(entry.Key, entry.Value, (k, v) => value);
+                case CacheCommandType.Add:
+                    foreach (var entry in command.Entries)
+                    {
+                        // You can't trick me C#...
+                        object value = entry.Value;
+                        _cache.AddOrUpdate(entry.Key, entry.Value, (k, v) => value);
+                    }
+                    break;
+                case CacheCommandType.Remove:
+                    foreach (var entry in command.Entries)
+                    {
+                        // You can't trick me C#...
+                        object value;
+                        _cache.TryRemove(entry.Key, out value);
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -55,15 +71,45 @@ namespace CacheR.Client
                 }
             };
 
+            var command = new CacheCommand
+            {
+                Type = CacheCommandType.Add,
+                Entries = entry
+            };
+
             // Make it available immediately to the local cache
             _cache.AddOrUpdate(key, value, (k, v) => value);
 
-            return _connection.Send(JsonConvert.SerializeObject(entry));
+            return SendCommand(command);
+        }
+
+        public Task Delete(string key)
+        {
+            var command = new CacheCommand
+            {
+                Type = CacheCommandType.Remove,
+                Entries = new[] {  
+                    new CacheEntry {
+                        Key = key
+                    }
+                }
+            };
+
+            // Execute local delete
+            object value;
+            _cache.TryRemove(key, out value);
+
+            return SendCommand(command);
         }
 
         public void Connect()
         {
             _connection.Start().Wait();
+        }
+
+        private Task SendCommand(CacheCommand command)
+        {
+            return _connection.Send(JsonConvert.SerializeObject(command));
         }
     }
 }

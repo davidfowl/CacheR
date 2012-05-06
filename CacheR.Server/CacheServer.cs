@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CacheR.Model;
 using Newtonsoft.Json;
@@ -41,13 +42,22 @@ namespace CacheR.Server
             _server.Stop();
         }
 
-        private Task Save(string rawEntry)
+        private Task Save(string rawCommand)
         {
-            Debug.WriteLine("Saving cache entry: " + rawEntry);
+            Debug.WriteLine("Processing command: " + rawCommand);
 
             // REVIEW: Should save retry on failure?
-            var entries = JsonConvert.DeserializeObject<CacheEntry[]>(rawEntry);
-            return Store.Save(entries[0]);
+            var command = JsonConvert.DeserializeObject<CacheCommand>(rawCommand);
+
+            switch (command.Type)
+            {
+                case CacheCommandType.Add:
+                    return Store.Save(command.Entries[0]);
+                case CacheCommandType.Remove:
+                    return Store.Delete(command.Entries[0].Key);
+                default:
+                    throw new NotSupportedException();
+            }
         }
 
         private class CacheConnection : PersistentConnection

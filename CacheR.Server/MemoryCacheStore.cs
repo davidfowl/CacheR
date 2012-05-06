@@ -36,6 +36,13 @@ namespace CacheR.Server
             }
         }
 
+        public Task Delete(string key)
+        {
+            _cache.Remove(key);
+
+            return _completedTask;
+        }
+
         private static Task CompletedTask()
         {
             var tcs = new TaskCompletionSource<object>();

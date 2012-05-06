@@ -36,6 +36,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CacheCommand.cs" />
+    <Compile Include="CacheCommandType.cs" />
     <Compile Include="CacheEntry.cs" />
     <Compile Include="CacheEntryKeyComparer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -8,5 +8,6 @@ namespace CacheR.Server
     {
         Task Save(CacheEntry entry);
         IEnumerable<CacheEntry> GetAll();
+        Task Delete(string key);
     }
 }

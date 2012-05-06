@@ -12,6 +12,7 @@ namespace CacheR
 
             Console.WriteLine("Enter 'key=value' to add a value to the cache.");
             Console.WriteLine("Enter 'key' to retrieve a value from the cache.");
+            Console.WriteLine("Enter '-key' to retrieve a value from the cache.");
 
             string line = null;
             while ((line = Console.ReadLine()) != null)
@@ -24,6 +25,12 @@ namespace CacheR
                     cache.Add(key, value).Wait();
 
                     Console.WriteLine("Added '{0}' to the cache with value '{1}'.", key, value);
+                }
+                else if (line.StartsWith("-"))
+                {
+                    string key = line.Substring(1).Trim();
+                    cache.Delete(key).Wait();
+                    Console.WriteLine("Deleting entry for key '{0}'", key);
                 }
                 else
                 {
