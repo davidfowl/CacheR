@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using CacheR.Model;
 using Newtonsoft.Json;
 using SignalR;
 using SignalR.Hosting;
-
 using SelfHostServer = SignalR.Hosting.Self.Server;
 
 namespace CacheR.Server
@@ -69,7 +69,7 @@ namespace CacheR.Server
             {
                 Type = CacheCommandType.Remove,
                 Entries = new[] {
-                    new CacheEntry{
+                    new CacheEntry {
                         Key = key
                     }
                 }
@@ -91,9 +91,15 @@ namespace CacheR.Server
 
             protected override Task OnConnectedAsync(IRequest request, string connectionId)
             {
+                var command = new CacheCommand
+                {
+                    Type = CacheCommandType.Add,
+                    Entries = _cache.Store.GetAll().ToArray()
+                };
+
                 // REVIEW: Should we send all of the data to the client on reconnect?
                 // Let the client request a subset of the data or none at all.
-                return Connection.Send(connectionId, _cache.Store.GetAll());
+                return Connection.Send(connectionId, command);
             }
 
             protected override Task OnReceivedAsync(string connectionId, string data)
