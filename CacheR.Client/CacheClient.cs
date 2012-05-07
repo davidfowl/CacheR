@@ -40,7 +40,6 @@ namespace CacheR.Client
                 case CacheCommandType.Remove:
                     foreach (var entry in command.Entries)
                     {
-                        // You can't trick me C#...
                         object value;
                         _cache.TryRemove(entry.Key, out value);
                     }
