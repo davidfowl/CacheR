@@ -3,16 +3,19 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using CacheR.Model;
+using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.Owin.Hosting;
 using Newtonsoft.Json;
-using SignalR;
-using SignalR.Hosting;
-using SelfHostServer = SignalR.Hosting.Self.Server;
+using Owin;
 
 namespace CacheR.Server
 {
     public class CacheServer
     {
-        private readonly SelfHostServer _server;
+        private IDisposable _server;
+        private IPersistentConnectionContext _context;
+        private readonly string _url;
 
         public CacheServer(string url)
             : this(new MemoryCacheStore(), url)
@@ -22,11 +25,8 @@ namespace CacheR.Server
         public CacheServer(ICacheStore store, string url)
         {
             Store = store;
-            _server = new SelfHostServer(url);
-            _server.DependencyResolver.Register(typeof(CacheConnection), () => new CacheConnection(this));
-            _server.MapConnection<CacheConnection>("/cache");
-
             Store.OnEntryRemoved = OnEntryRemoved;
+            _url = url;
         }
 
         public ICacheStore Store
@@ -37,12 +37,31 @@ namespace CacheR.Server
 
         public void Start()
         {
-            _server.Start();
+            if (_server == null)
+            {
+                _server = WebApp.Start(_url, app =>
+                {
+                    var config = new ConnectionConfiguration
+                    {
+                        Resolver = new DefaultDependencyResolver()
+                    };
+
+                    config.Resolver.Register(typeof(CacheConnection), () => new CacheConnection(this));
+
+                    _context = config.Resolver.Resolve<IConnectionManager>().GetConnectionContext<CacheConnection>();
+
+                    app.MapSignalR<CacheConnection>("/cache", config);
+                });
+            }
         }
 
         public void Stop()
         {
-            _server.Stop();
+            if (_server != null)
+            {
+                _server.Dispose();
+                _server = null;
+            }
         }
 
         private Task Save(string rawCommand)
@@ -76,8 +95,7 @@ namespace CacheR.Server
             };
 
             // When an entry is removed let all subscribers know
-            var context = _server.ConnectionManager.GetConnectionContext<CacheConnection>();
-            context.Connection.Broadcast(command);
+            _context.Connection.Broadcast(command);
         }
 
         private class CacheConnection : PersistentConnection
@@ -89,7 +107,7 @@ namespace CacheR.Server
                 _cache = cache;
             }
 
-            protected override Task OnConnectedAsync(IRequest request, string connectionId)
+            protected override Task OnConnected(IRequest request, string connectionId)
             {
                 var command = new CacheCommand
                 {
@@ -102,10 +120,11 @@ namespace CacheR.Server
                 return Connection.Send(connectionId, command);
             }
 
-            protected override Task OnReceivedAsync(string connectionId, string data)
+            protected override async Task OnReceived(IRequest request, string connectionId, string data)
             {
                 // Store the data and tell all clients to update
-                return _cache.Save(data).ContinueWith(task => Connection.Broadcast(data)).Unwrap();
+                await _cache.Save(data);
+                await Connection.Broadcast(data);
             }
         }
     }

@@ -2,8 +2,8 @@
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using CacheR.Model;
+using Microsoft.AspNet.SignalR.Client;
 using Newtonsoft.Json;
-using SignalR.Client;
 
 namespace CacheR.Client
 {
@@ -60,7 +60,7 @@ namespace CacheR.Client
             return null;
         }
 
-        public Task Add(string key, object value)
+        public Task AddAsync(string key, object value)
         {
             var entry = new[] {
                 new CacheEntry
@@ -82,7 +82,7 @@ namespace CacheR.Client
             return SendCommand(command);
         }
 
-        public Task Delete(string key)
+        public Task DeleteAsync(string key)
         {
             var command = new CacheCommand
             {
@@ -101,9 +101,9 @@ namespace CacheR.Client
             return SendCommand(command);
         }
 
-        public void Connect()
+        public Task ConnectAsync()
         {
-            _connection.Start().Wait();
+            return _connection.Start();
         }
 
         private Task SendCommand(CacheCommand command)

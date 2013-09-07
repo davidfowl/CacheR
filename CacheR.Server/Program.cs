@@ -9,7 +9,7 @@ namespace CacheR.Server
         static void Main(string[] args)
         {
             var listener = new ConsoleTraceListener();
-            string url = args.Length == 1 ? args[0] : "http://localhost:91/";
+            string url = args.Length == 1 ? args[0] : "http://localhost:8087/";
 
             var server = new CacheServer(url);
             server.Start();

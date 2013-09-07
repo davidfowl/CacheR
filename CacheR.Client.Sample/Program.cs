@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CacheR.Client;
 
 namespace CacheR
@@ -7,8 +8,14 @@ namespace CacheR
     {
         static void Main(string[] args)
         {
-            var cache = new Cache("http://localhost:91");
-            cache.Connect();
+            var cache = new Cache("http://localhost:8087");
+
+            RunCacheTest(cache).Wait();
+        }
+
+        private static async Task RunCacheTest(Cache cache)
+        {
+            await cache.ConnectAsync();
 
             Console.WriteLine("Enter 'key=value' to add a value to the cache.");
             Console.WriteLine("Enter 'key' to get a value from the cache.");
@@ -22,14 +29,15 @@ namespace CacheR
                 {
                     string key = values[0].Trim();
                     string value = values[1].Trim();
-                    cache.Add(key, value).Wait();
+                    await cache.AddAsync(key, value);
 
                     Console.WriteLine("Added '{0}' to the cache with value '{1}'.", key, value);
                 }
                 else if (line.StartsWith("-"))
                 {
                     string key = line.Substring(1).Trim();
-                    cache.Delete(key).Wait();
+                    await cache.DeleteAsync(key);
+
                     Console.WriteLine("Deleting entry for key '{0}'", key);
                 }
                 else
